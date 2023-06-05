@@ -32,6 +32,13 @@ contract PaintingCar {
         masterAddress.transfer(carsArray[_ID].price * 10**18);
     }
 
+    function cancelPaintingCar(uint _ID) public {
+        require(msg.sender == carsArray[_ID].owner, "You are not owner this car!");
+        require(carsArray[_ID].status, "This car is not painting");
+
+        carsArray[_ID].status = false;
+    }
+
     function calcPrice(uint _ID, address _Master, uint _Price) public {
         require(msg.sender == _Master, "You are not master!");
         carsArray[_ID].price = _Price;
