@@ -23,22 +23,21 @@ pragma solidity >=0.7.0 <0.9.0;
 
     constructor() {
         cars[numCars] = Car(payable(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2), false, 0);
-        masters[numMasters] = Masters(numMasters, payable(0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB));
+        masters[numMasters] = Masters(numMasters, payable(0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db));
         numCars++;
         numMasters++;
     }
-
+    
     function paintingCar(uint _ID, uint _MasterID) public payable {
-        require(cars[_ID].owner == msg.sender, "You are not the owner of this car!");
         require(_ID < numCars, "Car not found!");
+        require(cars[_ID].owner == msg.sender, "You are not the owner of this car!");
         require(!cars[_ID].status, "This car is already being painted!");
         require(masters[_MasterID].master != address(0), "Master not found!");
         require(cars[_ID].price <= msg.value, "Insufficient payment to start painting!");
 
         cars[_ID].status = true;
-        cars[_ID].owner.transfer(msg.value);
-
         masters[_MasterID].master.transfer(cars[_ID].price * 10**18);
+        cars[_ID].owner.transfer(msg.value - cars[_ID].price * 10**18);
     }
 
     function cancelPaintingCar(uint _ID) public {
