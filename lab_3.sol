@@ -63,8 +63,11 @@ contract Voting {
         numHeadmans++;
     }
 
-    function startVoted(string memory _Surname, string memory _Group) public {
-        require(msg.sender == admin, "You are not admin!");
+    function voted(string memory _Group) public {
+        require(block.timestamp < VotedTime, "Voted is not started");
+        for(uint i = 0; i < numStudents; i++) {
+            require(studentsArr[i].statusVoted, "You are already voted!");
+        }
         
     }
 }
