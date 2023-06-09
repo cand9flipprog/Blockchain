@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity >=0.7.0 <0.9.0;
+import "hardhat/console.sol";
 
 contract Voting {
     struct Headman {
@@ -62,10 +63,16 @@ contract Voting {
         numHeadmans++;
     }
 
-    function voted(string memory _Group) public {
+    function voted(uint _ID, string memory _Group) public {
         require(block.timestamp < VotedTime, "Voted is not started");
         for(uint i = 0; i < numStudents; i++) {
             require(studentsArr[i].statusVoted, "You are already voted!");
+        }
+        for(uint i = 0; i < numStudents; i++) {
+            require(keccak256(abi.encodePacked(studentsArr[i].group)) == keccak256(abi.encodePacked(_Group)), "You are not this group!");
+            for(uint j = 0; j < numHeadmans; j++) {
+                require(keccak256(abi.encodePacked(headmansArr[i].group)) == keccak256(abi.encodePacked(_Group)), "You are not this group");
+            }
         }
         
     }
