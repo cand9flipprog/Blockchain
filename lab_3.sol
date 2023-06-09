@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity >=0.7.0 <0.9.0;
-import "hardhat/console.sol";
 
 contract Voting {
     struct Headman {
@@ -9,93 +8,76 @@ contract Voting {
         uint votedNumber;
         string surname;
         string group;
-        bool statusRegistered;
     }
 
     struct Students {
         uint ID;
+        address student;
         string surname;
         string group;
-        uint votedNum;
         bool statusVoted;
     }
 
     mapping(uint => Headman) public headmansArr;
-    mapping(uint => Students) public studentsArr;
+    mapping(address => Students) public studentsMapping;
 
     uint public numHeadmans = 0;
-    uint public numStudents = 0;
     uint public timeVoted = 0;
+
+    bool public votingStarted = false;
 
     address admin = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
 
-    bool VotedStatus = false;
-    bool public votingStarted = false;
-
     constructor() {
-        studentsArr[numStudents] = Students(numStudents, "Ivanov", "ISiP(p) 2/3", 1, false);
-        numStudents++;
-
-        studentsArr[numStudents] = Students(numStudents, "Petrov", "ISiP(p) 2/3", 1, false);
-        numStudents++;
-
-        studentsArr[numStudents] = Students(numStudents, "Limanov", "KSK 2/27", 1, false);
-        numStudents++;
-
-        studentsArr[numStudents] = Students(numStudents, "Semenov", "KSK 2/27", 1, false);
-        numStudents++;
-
-        timeVoted = block.timestamp + 1 minutes; 
+        studentsMapping[0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2] = Students(0, 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2, "Ivanov", "KSK", false);
+        studentsMapping[0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db] = Students(1, 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db, "Petrov", "KSK", false);
+        studentsMapping[0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB] = Students(2, 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB, "Lipatov", "ISIP", false);
+        studentsMapping[0x617F2E2fD72FD9D5503197092aC168c91465E7f2] = Students(3, 0x617F2E2fD72FD9D5503197092aC168c91465E7f2, "Semenov", "ISIP", false);
     }
 
-    function addNewStudent(uint _ID, string memory _Surname, string memory _Group) public {
-        require(msg.sender == 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4, "You are not admin");
-        for(uint i = 0; i < numStudents; i++) {
-            require(studentsArr[i].ID != _ID, "Headman already exists!");
-        }
-        studentsArr[numStudents] = Students(numStudents, _Surname, _Group, 1, false);
-        numStudents++;
+    function addNewStudent(uint _ID, address _student, string memory _surname, string memory _group) public {
+        require(msg.sender == admin, "You are not admin");
+        require(studentsMapping[_student].ID != _ID, "Headman already exists!");
+        studentsMapping[_student] = Students(_ID, _student, _surname, _group, false);
     }
 
-    function addNewHeadman(uint _ID, string memory _Surname, string memory _Group) public {
+    function addNewHeadman(uint _ID, string memory _surname, string memory _group) public {
         require(msg.sender == admin, "You are not admin!");
-        for(uint i = 0; i < numHeadmans; i++) {
-            require(headmansArr[i].ID != _ID, "Headman already exists!");
-        }
-        headmansArr[numHeadmans] = Headman(numHeadmans, 0, _Surname, _Group, false);
+        require(headmansArr[_ID].ID != _ID, "Headman already exists!");
+        headmansArr[_ID] = Headman(_ID, 0, _surname, _group);
         numHeadmans++;
     }
 
     function startVoted() public {
         require(msg.sender == admin, "You are not admin!");
         require(!votingStarted, "Voting has already started!");
+        timeVoted = block.timestamp + 5 minutes; 
         votingStarted = true;
     }
 
-    function vote(uint _studentID, uint _headmanID) public {
+    function vote(address _student, uint _headmanID) public {
         require(votingStarted, "Voting has not started yet");
-        require(block.timestamp <= timeVoted, "Voting period has ended");
-        require(!studentsArr[_studentID].statusVoted, "You have already voted");
-        require(keccak256(abi.encodePacked(studentsArr[_studentID].group)) == keccak256(abi.encodePacked(headmansArr[_headmanID].group)), "You are not in the same group");
+        require(block.timestamp <= timeVoted, "The voting period is over");
+        require(!studentsMapping[_student].statusVoted, "You already voted");
+        require(studentsMapping[_student].student == msg.sender, "You are not owner this account");
+        require(keccak256(abi.encodePacked(studentsMapping[_student].group)) == keccak256(abi.encodePacked(headmansArr[_headmanID].group)), "You are not in the same group");
 
-        studentsArr[_studentID].statusVoted = true;
+        studentsMapping[_student].statusVoted = true;
         headmansArr[_headmanID].votedNumber++;
     }
 
     function getVotingResult() public view returns (string memory) {
         require(votingStarted, "Voting has not started yet");
-        require(block.timestamp >= timeVoted, "Voting is still ongoing");
+        require(block.timestamp >= timeVoted, "Voting is still going on");
 
         uint maxVotes = 0;
-        uint winnerIndex;
+        uint winnerHeadman;
 
         for (uint i = 0; i < numHeadmans; i++) {
             if (headmansArr[i].votedNumber > maxVotes) {
                 maxVotes = headmansArr[i].votedNumber;
-                winnerIndex = i;
+                winnerHeadman = i;
             }
         }
 
-        return string(abi.encodePacked("The winner is ", headmansArr[winnerIndex].surname));
-    }
-}
+        return string(abi.encodePacked("Winner headman - ", headmansArr[winnerHeadman
