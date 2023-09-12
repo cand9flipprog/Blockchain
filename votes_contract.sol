@@ -80,4 +80,5 @@ contract Voting {
             }
         }
 
-        return string(abi.encodePacked("Winner headman - ", headmansArr[winnerHeadman
+        return string(abi.encodePacked("Winner headman - ", headmansArr[winnerHeadman]));
+    }
