@@ -51,42 +51,40 @@ contract transferMoney {
     // function for create offer for send money
 
     function createOffer(address _somebody, uint _amount, string memory secretKey) public payable {
-        require(msg.value >= _amount, "Check money");
+        require(msg.value == _amount, "Check money");
         require(_somebody != msg.sender, "You can not pay money to me!");
         require(_amount != 0, "You haven't money");
 
-        transfers[numTransfers] = Transfer(msg.sender, _somebody, _amount, keccak256(abi.encodePacked(secretKey)), true);
+        transfers[numTransfers] = Transfer(msg.sender, _somebody, _amount * 10 ** 18, keccak256(abi.encodePacked(secretKey)), true);
         numTransfers++;
     }
 
 
     // function get money out contract
 
-    function getMoney(uint _ID, uint _somebodyID, address _somebody, bytes32 key) public {
+    function getMoney(uint _ID, uint _somebodyID, address _somebody,  string memory key) public {
         require(transfers[_ID].somebody == msg.sender, "You are not sender!");
-        if(transfers[_ID].secretKey == key) {
-            payable(_somebody).transfer(transfers[_ID].amount * 10 ** 18);
+        if(transfers[_ID].secretKey == keccak256(abi.encodePacked(key))) {
+            payable(_somebody).transfer(transfers[_ID].amount);
             
             users[_ID].balance -= transfers[_ID].amount;
             users[_somebodyID].balance += transfers[_ID].amount;
-
-            transfers[_ID].transferStatus = false;
         } else {
             payable(transfers[_ID].owner).transfer(transfers[_ID].amount);
-
-            transfers[_ID].transferStatus = false;
         }
+        
+        transfers[_ID].transferStatus = false;
     }
 
     // function cancel offer for contract
 
     function cancelOffer(uint _ID) public {
+        require(transfers[_ID].transferStatus, "");
         require(transfers[_ID].owner == msg.sender, "You are not sender!");
-        payable(transfers[_ID].owner).transfer(transfers[_ID].amount * 10 ** 18);
+        payable(transfers[_ID].owner).transfer(transfers[_ID].amount);
 
         transfers[_ID].transferStatus = false;
     }
-
 
     // function change role
                      
