@@ -1,95 +1,63 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.7.0 < 0.9.0;
+pragma solidity ^0.8.0;
 
-contract transferMoney {
+contract TransferMoney {
     struct User {
         string name;
         uint role;
-        uint balance;
     }
 
     struct Transfer {
         address owner;
         address somebody;
-        uint amount;
-        bytes32 secretKey;
-        bool transferStatus;
+        uint256 amount;
+        bool status;
+        bytes32 secret_key;
     }
 
-    mapping(uint => User) public users;
-    mapping(uint => Transfer) public transfers;
-
-    uint public numUsers = 0;
-    uint public numTransfers = 0;
+    mapping(address => User) public users;
+    Transfer[] public transfers;
 
     constructor() {
-        // Create Administrators
-
-        users[numUsers] = User("Roman", 1, 45);
-        numUsers++;
-
-        users[numUsers] = User("Alexander", 1, 20);
-        numUsers++;
-
-        // Create default users
-
-        users[numUsers] = User("Dmitriy", 0, 10);
-        numUsers++;
-
-        users[numUsers] = User("Ivan", 0, 15);
-        numUsers++;
-
-        users[numUsers] = User("Alexey", 0, 20);
-        numUsers++;
-
-        users[numUsers] = User("Maxim", 0, 30);
-        numUsers++;
+        users[msg.sender] = User("Dmitriy", 0);
     }
 
-
-    // function for create offer for send money
-
-    function createOffer(address _somebody, uint _amount, string memory secretKey) public payable {
-        require(msg.value == _amount, "Check money");
-        require(_somebody != msg.sender, "You can not pay money to me!");
-        require(_amount != 0, "You haven't money");
-
-        transfers[numTransfers] = Transfer(msg.sender, _somebody, _amount * 10 ** 18, keccak256(abi.encodePacked(secretKey)), true);
-        numTransfers++;
+    function create_user(string memory _name, uint _role) public {
+        users[msg.sender] = User(_name, _role);
     }
 
+    function create_offer(address _somebody, string memory _secret_key) public payable {
+        require(msg.value > 0, "Infussicient value sent");
+        require(msg.sender != _somebody, "You can't pay to yourself");
 
-    // function get money out contract
+        transfers.push(Transfer(msg.sender, _somebody, msg.value, true, keccak256(abi.encodePacked(_secret_key))));
+    }
 
-    function getMoney(uint _ID, uint _somebodyID, address _somebody,  string memory key) public {
-        require(transfers[_ID].somebody == msg.sender, "You are not sender!");
-        if(transfers[_ID].secretKey == keccak256(abi.encodePacked(key))) {
-            payable(_somebody).transfer(transfers[_ID].amount);
-            
-            users[_ID].balance -= transfers[_ID].amount;
-            users[_somebodyID].balance += transfers[_ID].amount;
-        } else {
-            payable(transfers[_ID].owner).transfer(transfers[_ID].amount);
-        }
+    function accept_offer(uint _transferID, string memory _user_secret_key) public {
+        require(transfers[_transferID].status, "This offer is not available!");
+        require(msg.sender == transfers[_transferID].somebody, "You are not somebody in transfer!");
         
-        transfers[_ID].transferStatus = false;
+        if(keccak256(abi.encodePacked(_user_secret_key)) == transfers[_transferID].secret_key) {
+            payable(msg.sender).transfer(transfers[_transferID].amount);
+        } else {
+            payable(transfers[_transferID].owner).transfer(transfers[_transferID].amount);
+        }
+
+        transfers[_transferID].status = false;
     }
 
-    // function cancel offer for contract
-
-    function cancelOffer(uint _ID) public {
-        require(transfers[_ID].transferStatus, "");
-        require(transfers[_ID].owner == msg.sender, "You are not sender!");
-        payable(transfers[_ID].owner).transfer(transfers[_ID].amount);
-
-        transfers[_ID].transferStatus = false;
+    function cancel_offer(uint _userID) public {
+        require(msg.sender == transfers[_userID].owner, "You are not owner in this transfer");
+        require(transfers[_userID].status, "Transfer already accept");
+        
+        payable(msg.sender).transfer(transfers[_userID].amount);
+        
+        transfers[_userID].status = false;
     }
 
-    // function change role
-                     
-    function changeRole(uint _ID) public {
-        require(users[_ID].role == 1, "You are not admin");
-        users[_ID].role = 1;
+    function change_role(address _somebody) public {
+        require(users[msg.sender].role == 1, "You are not admin!");
+        users[_somebody].role = 1;
     }
 }
