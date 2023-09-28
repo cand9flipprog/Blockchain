@@ -29,7 +29,7 @@ contract TransferMoney {
 
     function create_offer(address _somebody, string memory _secret_key) public payable {
         require(msg.value > 0, "Infussicient value sent");
-        require(msg.sender != _somebody, "You can't pay to yourself");
+        require(msg.sender != _somebody, "You cant pay to yourself");
 
         transfers.push(Transfer(msg.sender, _somebody, msg.value, true, keccak256(abi.encodePacked(_secret_key))));
     }
